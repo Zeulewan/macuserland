@@ -300,3 +300,10 @@
     #    type: bool
      #   value: true
 
+    - name: Add opt homebrew bin to path
+      lineinfile:
+        path: "~/.zshrc"
+        line: 'PATH="$PATH:/opt/homebrew/bin/"'
+        create: yes
+      become: no
+
