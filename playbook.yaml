@@ -1,1 +1,302 @@
+---
+- name: Install MacOS Packages
+  hosts: localhost
+  become: false
+  vars:
+    HOME: "{{ lookup('env', 'HOME') }}"
+    brew_cask_packages:
+      - font-fira-mono-nerd-font
+      - font-hack-nerd-font
+      - font-meslo-lg-nerd-font
+      - font-mononoki-nerd-font
+      - font-sauce-code-pro-nerd-font
+      - font-terminess-ttf-nerd-font
+      - iterm2
+    brew_packages:
+      - exa
+      - git
+      - gh
+      - jq
+      - ssh-copy-id
+      - speedtest-cli
+      - yamllint
+      - zsh-syntax-highlighting
+
+    install_homebrew_if_missing: true
+    upgrade_homebrew_packages: true
+    # python_modules:
+    #   - configparser
+    #   - pylint
+    #   - virtualenv
+  roles:
+    - role: gantsign.oh-my-zsh
+      users:
+        - username: "{{ ansible_user_id }}"
+          sudo: yes
+          oh_my_zsh:
+            theme: agnoster
+            write_zshrc: true
+            plugins:
+              - exa-zsh
+              - git
+              - colorize
+              - cp
+              - gh
+              - history
+              - jsontools
+              - sudo
+              - vscode
+              - brew
+              - macos
+              - zsh-syntax-highlighting
+              - zsh-autosuggestions
+              - zsh-dircolors-solarized
+              - zsh-interactive-cd
+              - zsh-navigation-tools
+              - zsh-vi-mode
+
+  pre_tasks:
+    - name: Ensuring Homebrew Is Installed
+      stat:
+        path: /opt/homebrew/bin/brew
+      register: homebrew_check
+
+    - name: Fail If Homebrew Is Not Installed and install_homebrew_if_missing Is False
+      fail:
+        msg: Homebrew is missing...Install from http://brew.sh/
+      when:
+        - not homebrew_check.stat.exists
+        - not install_homebrew_if_missing
+
+    - name: Installing Homebrew
+      shell: /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install)"
+      when:
+        - not homebrew_check.stat.exists
+        - install_homebrew_if_missing
+
+  tasks:
+    - name: Updating Homebrew
+      homebrew:
+        update_homebrew: true
+      when: homebrew_check.stat.exists
+
+    - name: Upgrading Homebrew Packages
+      homebrew:
+        upgrade_all: "{{ upgrade_homebrew_packages }}"
+      register: result
+      until: result is successful
+      when: homebrew_check.stat.exists
+
+    - name: Tap a Homebrew repository, state present
+      homebrew_tap:
+        name: homebrew/cask-fonts
+
+    - name: Installing Homebrew Cask Packages
+      homebrew_cask:
+        name: "{{ brew_cask_packages }}"
+        state: present
+      register: result
+      until: result is successful
+      when: homebrew_check.stat.exists
+
+    - name: Installing Homebrew Packages
+      homebrew:
+        name: "{{ brew_packages }}"
+        state: present
+      register: result
+      until: result is successful
+      when: homebrew_check.stat.exists
+
+    # - name: Installing Python Modules
+    #   pip:
+    #     name: "{{ item }}"
+    #     state: present
+    #   with_items: '{{ python_modules }}'
+
+    - name: Configure Ansible
+      ini_file:
+        path: "{{ HOME }}/ansible.cfg"
+        section: "colors"
+        option: "verbose"
+        value: "green"
+
+    - name: Hushlogin
+      file:
+        path: "{{ HOME }}/.hushlogin"
+        state: touch
+        mode: '0644'
+        access_time: preserve
+        modification_time: preserve
+    - name: GIT config
+      git_config:
+          name: "{{ item.name }}"
+          scope: global
+          value: "{{ item.value }}"
+      with_items:
+          - {name: "credential.helper", value: "!/opt/homebrew/bin/gh auth git-credential" }
+          - {name: "user.name",  value: "Zeulewan Mordasiewicz" }
+          - {name: "user.email", value: "zeul@mordasiewicz.com" }
+          - {name: "ui.color",   value: "True" }
+          - {name: "core.editor",   value: "vim" }
+          - {name: "core.excludesfile", value: "{{ HOME }}/.gitignore"}
+          - {name: "init.defaultBranch", value: "main" }
+          - {name: "push.autoSetupRemote", value: "true" }
+
+    - name: Install zsh vim-mode
+      ansible.builtin.git:
+        repo: https://github.com/jeffreytse/zsh-vi-mode.git
+        dest: "{{ HOME }}/.oh-my-zsh/plugins/zsh-vi-mode"
+        force: yes
+      register: vimode
+      changed_when: ( vimode.remote_url_changed is not defined or vimode.remote_url_changed ) 
+    - name: Install zsh autosuggestions
+      ansible.builtin.git:
+        repo: https://github.com/zsh-users/zsh-autosuggestions.git
+        dest: "{{ HOME }}/.oh-my-zsh/plugins/zsh-autosuggestions"
+        force: yes
+      register: autosuggestions
+      changed_when: ( autosuggestions.remote_url_changed is not defined or autosuggestions.remote_url_changed ) 
+    - name: Install zsh zsh-dircolors-solarized
+      ansible.builtin.git:
+        repo: https://github.com/joel-porquet/zsh-dircolors-solarized
+        dest: "{{ HOME }}/.oh-my-zsh/plugins/zsh-dircolors-solarized"
+        force: yes
+      register: zshdircolorssolarized
+      changed_when: ( zshdircolorssolarized.remote_url_changed is not defined or zshdircolorssolarized.remote_url_changed )
+    - name: Install zsh syntax-highlighting
+      ansible.builtin.git:
+        repo: https://github.com/zsh-users/zsh-syntax-highlighting.git
+        dest: "{{ HOME }}/.oh-my-zsh/plugins/zsh-syntax-highlighting"
+        force: yes
+      register: syntaxhighlighting
+      changed_when: ( syntaxhighlighting.remote_url_changed is not defined or syntaxhighlighting.remote_url_changed )
+
+    - name: Install zsh exa
+      ansible.builtin.git:
+        repo: https://github.com/MohamedElashri/exa-zsh.git
+        dest: "{{ HOME }}/.oh-my-zsh/plugins/exa-zsh"
+        force: yes
+      register: zshexa
+      changed_when: ( zshexa.remote_url_changed is not defined or zshexa.remote_url_changed )
+    - name: Ensure .vim/{autoload,bundle} directory exists
+      file:
+        path: "{{ item }}"
+        state: directory
+        recurse: no
+        mode: 0750
+      loop:
+        - "{{ HOME }}/.vim"
+        - "{{ HOME }}/.vim/autoload"
+        - "{{ HOME }}/.vim/bundle"
+    - name: Ensure Pathogen is in place
+      get_url:
+        dest: "{{ HOME }}/.vim/autoload/pathogen.vim"
+        url: https://tpo.pe/pathogen.vim
+    - name: Deploy plugins
+      git:
+        dest: "{{ HOME }}/.vim/bundle/{{ item.name }}"
+        repo: "{{ item.url }}"
+        clone: yes
+        update: yes
+        recursive: no
+      loop:
+      - name: vim-airline
+        url: https://github.com/vim-airline/vim-airline
+      - name: nerdtree
+        url: https://github.com/preservim/nerdtree
+      - name: fzf-vim
+        url: https://github.com/junegunn/fzf.vim
+      - name: vim-gitgutter
+        url: https://github.com/airblade/vim-gitgutter
+      - name: vim-fugitive
+        url: https://github.com/tpope/vim-fugitive
+      - name: vim-floaterm
+        url: https://github.com/voldikss/vim-floaterm
+    - name: Ensure .vimrc config in place
+      copy:
+        src: vimrc
+        dest: "{{ HOME }}/.vimrc"
+        backup: yes
+        mode: 0640
+
+    - name: Ensure .vim/colors exists
+      file:
+        path: "{{ HOME }}/.vim/colors"
+        recurse: true
+        state: directory
+    - name: Download vim theme
+      get_url:
+        url: https://raw.githubusercontent.com/crusoexia/vim-monokai/master/colors/monokai.vim
+        dest: "{{ HOME }}/.vim/colors/monokai.vim"
+        mode: '0640'
+
+    - osx_defaults:
+        domain: com.apple.dock
+        host: currentHost
+        key: autohide
+        type: bool
+        value: true
+
+    - osx_defaults:
+        domain: com.apple.Safari
+        host: currentHost
+        key: IncludeDevelopMenu
+        type: bool
+        value: true
+
+    - osx_defaults:
+        domain: com.apple.Safari
+        host: currentHost
+        key: IncludeInternalDebugMenu
+        type: bool
+        value: true
+
+    - osx_defaults:
+        domain: com.apple.Safari
+        host: currentHost
+        key: WebKitDeveloperExtrasEnabledPreferenceKey
+        type: bool
+        value: true
+
+    - osx_defaults:
+        domain: com.apple.Safari
+        host: currentHost
+        key: com.apple.Safari.ContentPageGroupIdentifier.WebKit2DeveloperExtrasEnabled
+        type: bool
+        value: true
+
+    - osx_defaults:
+        domain: NSGlobalDomain
+        host: currentHost
+        key: WebKitDeveloperExtras
+        type: bool
+        value: true
+
+    - osx_defaults:
+        domain: com.apple.Safari
+        host: currentHost
+        key: ShowStatusBar
+        type: bool
+        value: true
+
+    - osx_defaults:
+        domain: com.apple.Safari
+        host: currentHost
+        key: ShowOverlayStatusBar
+        type: bool
+        value: true
+
+    - osx_defaults:
+        domain: com.apple.Safari
+        host: currentHost
+        key: ShowFullURLInSmartSearchField
+        type: bool
+        value: true
+
+#    - osx_defaults:
+ #       domain: com.apple.Safari
+  #      host: currentHost
+   #     key: AlwaysRestoreSessionAtLaunch
+    #    type: bool
+     #   value: true
 
