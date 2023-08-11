@@ -12,6 +12,7 @@
       - font-sauce-code-pro-nerd-font
       - font-terminess-ttf-nerd-font
       - iterm2
+      - visual-studio-code
     brew_packages:
       - exa
       - git
