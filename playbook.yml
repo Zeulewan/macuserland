@@ -172,13 +172,13 @@
       register: syntaxhighlighting
       changed_when: ( syntaxhighlighting.remote_url_changed is not defined or syntaxhighlighting.remote_url_changed )
 
-    - name: Install zsh exa
-      ansible.builtin.git:
-        repo: https://github.com/MohamedElashri/exa-zsh.git
-        dest: "{{ HOME }}/.oh-my-zsh/plugins/exa-zsh"
-        force: yes
-      register: zshexa
-      changed_when: ( zshexa.remote_url_changed is not defined or zshexa.remote_url_changed )
+#    - name: Install zsh exa
+#      ansible.builtin.git:
+#        repo: https://github.com/MohamedElashri/exa-zsh.git
+#        dest: "{{ HOME }}/.oh-my-zsh/plugins/exa-zsh"
+#        force: yes
+#      register: zshexa
+#      changed_when: ( zshexa.remote_url_changed is not defined or zshexa.remote_url_changed )
     - name: Ensure .vim/{autoload,bundle} directory exists
       file:
         path: "{{ item }}"
@@ -300,5 +300,23 @@
    #     key: AlwaysRestoreSessionAtLaunch
     #    type: bool
      #   value: true
+    - name: Add aliases to .bashrc (for Bash shell)
+      lineinfile:
+        path: /home/your_ansible_user/.bashrc
+        line: "{{ item }}"
+      with_items:
+        - 'alias ls="exa"'
+        - 'alias l="ls -lbF"'
+        - 'alias ll="ls -la"'
+        - 'alias llm="ll --sort=modified"'
+        - 'alias la="ls -lbhHigUmuSa"'
+        - 'alias lx="ls -lbhHigUmuSa@"'
+        - 'alias tree="exa --tree"'
+        - 'alias lS="exa -1"'
+      notify: Reload shell
+
+  handlers:
+    - name: Reload shell
+      shell: exec bash
 
 
