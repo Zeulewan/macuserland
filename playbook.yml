@@ -313,10 +313,6 @@
         - 'alias lx="ls -lbhHigUmuSa@"'
         - 'alias tree="exa --tree"'
         - 'alias lS="exa -1"'
-      notify: Reload shell
 
-  handlers:
-    - name: Reload shell
-      shell: exec bash
 
 
