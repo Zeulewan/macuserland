@@ -300,9 +300,9 @@
    #     key: AlwaysRestoreSessionAtLaunch
     #    type: bool
      #   value: true
-    - name: Add aliases to .bashrc (for Bash shell)
+    - name: Add aliases to .zshrc (for Bash shell)
       lineinfile:
-        path: /home/your_ansible_user/.bashrc
+        path: /home/.zshrc
         line: "{{ item }}"
       with_items:
         - 'alias ls="exa"'
