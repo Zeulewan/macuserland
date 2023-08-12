@@ -302,7 +302,7 @@
      #   value: true
     - name: Add aliases to .zshrc (for Bash shell)
       lineinfile:
-        path: /home/.zshrc
+        path: /home/zeul/.zshrc
         line: "{{ item }}"
       with_items:
         - 'alias ls="exa"'
