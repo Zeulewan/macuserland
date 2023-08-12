@@ -38,7 +38,7 @@
             theme: agnoster
             write_zshrc: true
             plugins:
-              - exa-zsh
+            #  - exa-zsh
               - git
               - colorize
               - cp
